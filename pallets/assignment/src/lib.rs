@@ -10,6 +10,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
 
+	// A type to hold strings
 	type BVec = BoundedVec<u8, ConstU32<100>>;
 
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
@@ -18,6 +19,7 @@ pub mod pallet {
 		id: BVec,
 		name: BVec,
 		company_name: BVec,
+		dob: (u8, u8, u16),
 	}
 
 	#[pallet::pallet]
@@ -38,7 +40,9 @@ pub mod pallet {
 
 	#[pallet::error]
 	pub enum Error<T> {
+		// Employee already exists
 		AlreadyExists,
+		// Employee not found
 		NotFound,
 	}
 
@@ -50,6 +54,9 @@ pub mod pallet {
 			id: Vec<u8>,
 			name: Vec<u8>,
 			company_name: Vec<u8>,
+			day: u8,
+			month: u8,
+			year: u16,
 		) -> DispatchResult {
 			frame_system::EnsureRoot::ensure_origin(origin)?;
 
@@ -59,7 +66,12 @@ pub mod pallet {
 
 			ensure!(!Employees::<T>::contains_key(&bid), Error::<T>::AlreadyExists);
 
-			let e = Employee { id: bid.clone(), name: bname, company_name: bconpany_name };
+			let e = Employee {
+				id: bid.clone(),
+				name: bname,
+				company_name: bconpany_name,
+				dob: (day, month, year),
+			};
 
 			Employees::<T>::insert(bid, e.clone());
 
@@ -74,6 +86,9 @@ pub mod pallet {
 			id: Vec<u8>,
 			name: Vec<u8>,
 			company_name: Vec<u8>,
+			day: u8,
+			month: u8,
+			year: u16,
 		) -> DispatchResult {
 			frame_system::EnsureRoot::ensure_origin(origin)?;
 
@@ -86,6 +101,7 @@ pub mod pallet {
 
 			new.name = bname;
 			new.company_name = bconpany_name;
+			new.dob = (day, month, year);
 
 			Employees::<T>::insert(new.id.clone(), new.clone());
 
