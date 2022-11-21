@@ -2,10 +2,13 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use sp_std::prelude::*;
 
 	type BVec = BoundedVec<u8, ConstU32<100>>;
 

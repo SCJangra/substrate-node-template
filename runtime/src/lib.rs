@@ -6,6 +6,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub use pallet_assignment;
+impl pallet_assignment::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
+
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -296,6 +301,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		Assignment: pallet_assignment,
 	}
 );
 
