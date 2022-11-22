@@ -9,6 +9,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 pub use pallet_assignment;
 impl pallet_assignment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_assignment::weights::SubstrateWeight<Runtime>;
 }
 
 use pallet_grandpa::{
@@ -349,6 +350,7 @@ mod benches {
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
 		[pallet_template, TemplateModule]
+		[pallet_assignment, Assignment]
 	);
 }
 

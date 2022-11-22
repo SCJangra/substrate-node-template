@@ -2,10 +2,13 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+pub mod weights;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use super::weights::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
@@ -16,10 +19,10 @@ pub mod pallet {
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct Employee {
-		id: BVec,
-		name: BVec,
-		company_name: BVec,
-		dob: (u8, u8, u16),
+		pub id: BVec,
+		pub name: BVec,
+		pub company_name: BVec,
+		pub dob: (u8, u8, u16),
 	}
 
 	#[pallet::pallet]
@@ -48,7 +51,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::add_employee(id.len() as u32))]
 		pub fn add_employee(
 			origin: OriginFor<T>,
 			id: Vec<u8>,
@@ -80,7 +83,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::update_employee(id.len() as u32))]
 		pub fn update_employee(
 			origin: OriginFor<T>,
 			id: Vec<u8>,
@@ -110,7 +113,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		#[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::remove_employee(id.len() as u32))]
 		pub fn remove_employee(origin: OriginFor<T>, id: Vec<u8>) -> DispatchResult {
 			frame_system::EnsureRoot::ensure_origin(origin)?;
 
@@ -127,6 +130,7 @@ pub mod pallet {
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		type WeightInfo: WeightInfo;
 	}
 }
 
@@ -135,3 +139,6 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
