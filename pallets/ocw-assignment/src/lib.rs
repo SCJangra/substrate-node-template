@@ -7,6 +7,25 @@ pub use pallet::*;
 use frame_support::log;
 use sp_std::vec::Vec;
 
+use frame_support::sp_runtime::KeyTypeId;
+pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"demo");
+pub mod crypto {
+	use frame_support::sp_runtime::{
+		app_crypto::{app_crypto, sr25519},
+		MultiSignature, MultiSigner,
+	};
+
+	app_crypto!(sr25519, super::KEY_TYPE);
+
+	pub struct AuthorityId;
+
+	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for AuthorityId {
+		type RuntimeAppPublic = Public;
+		type GenericPublic = sr25519::Public;
+		type GenericSignature = sr25519::Signature;
+	}
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::{
@@ -18,8 +37,10 @@ pub mod pallet {
 		unsigned::{TransactionSource, TransactionValidity, ValidateUnsigned},
 	};
 	use frame_system::{
-		ensure_none,
-		offchain::{SendTransactionTypes, SubmitTransaction},
+		ensure_none, ensure_signed,
+		offchain::{
+			AppCrypto, CreateSignedTransaction, SendSignedTransaction, Signer, SubmitTransaction,
+		},
 		pallet_prelude::{BlockNumberFor, OriginFor},
 	};
 
@@ -36,15 +57,17 @@ pub mod pallet {
 	pub type NextUnsignedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
+	pub trait Config: frame_system::Config + CreateSignedTransaction<Call<Self>> {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type UnsignedInterval: Get<Self::BlockNumber>;
+		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		NewPriceUnsigned { price: BVec },
+		NewPriceSigned { price: BVec },
 	}
 
 	#[pallet::hooks]
@@ -63,15 +86,37 @@ pub mod pallet {
 			let price_str = sp_std::str::from_utf8(&price).unwrap();
 			log::info!("Current price is {price_str}");
 
-			// Submit transaction
+			// Submit unsigned transaction
 			if <NextUnsignedAt<T>>::get() > block_number {
 				return;
 			}
-
-			let call = Call::<T>::set_current_price_unsigned { block_number, price };
+			let call = Call::<T>::set_current_price_unsigned { block_number, price: price.clone() };
 			let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
 			if res.is_err() {
 				log::error!("Could not submit unsigned transaction");
+			}
+
+			// Submit signed transaction
+			let signer = Signer::<T, T::AuthorityId>::all_accounts();
+			if !signer.can_sign() {
+				log::error!("No account to sign");
+				return;
+			}
+
+			let results = signer.send_signed_transaction(|_account| Call::<T>::set_current_price {
+				price: price.clone(),
+			});
+
+			for (acc, res) in &results {
+				match res {
+					Err(()) => {
+						log::error!(
+							"Could not submitted signed transaction using account: {:?}",
+							acc.id
+						)
+					},
+					Ok(()) => {},
+				}
 			}
 		}
 	}
@@ -120,6 +165,15 @@ pub mod pallet {
 			<NextUnsignedAt<T>>::put(current_block + T::UnsignedInterval::get());
 
 			Self::deposit_event(Event::NewPriceUnsigned { price });
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn set_current_price(origin: OriginFor<T>, price: Vec<u8>) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let price: BVec = price.try_into().unwrap();
+			Self::deposit_event(Event::NewPriceSigned { price });
 			Ok(())
 		}
 	}
