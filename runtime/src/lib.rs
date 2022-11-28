@@ -248,6 +248,7 @@ impl pallet_timestamp::Config for Runtime {
 
 impl pallet_ocw_assignment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	type UnsignedInterval = ConstU32<1>;
 }
 
 /// Existential deposit.
