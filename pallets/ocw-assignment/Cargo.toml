@@ -10,6 +10,7 @@ frame-support = { version = "4.0.0-dev", default-features = false, git = "https:
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.32" }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 parity-scale-codec = { version = "3.0.0", default-features = false, features = ["derive"]}
+sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.32" }
 
 [features]
 default = ["std"]

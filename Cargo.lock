@@ -3958,6 +3958,7 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
+ "sp-std",
 ]
 
 [[package]]
