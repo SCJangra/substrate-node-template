@@ -6,6 +6,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+	RuntimeCall: From<C>,
+{
+	type OverarchingCall = RuntimeCall;
+	type Extrinsic = UncheckedExtrinsic;
+}
+
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -238,7 +246,9 @@ impl pallet_timestamp::Config for Runtime {
 	type WeightInfo = ();
 }
 
-impl pallet_ocw_assignment::Config for Runtime {}
+impl pallet_ocw_assignment::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
 
 /// Existential deposit.
 pub const EXISTENTIAL_DEPOSIT: u128 = 500;
