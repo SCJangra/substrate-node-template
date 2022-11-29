@@ -12,6 +12,7 @@ pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"demo");
 pub mod crypto {
 	use frame_support::sp_runtime::{
 		app_crypto::{app_crypto, sr25519},
+		traits::Verify,
 		MultiSignature, MultiSigner,
 	};
 
@@ -20,6 +21,17 @@ pub mod crypto {
 	pub struct AuthorityId;
 
 	impl frame_system::offchain::AppCrypto<MultiSigner, MultiSignature> for AuthorityId {
+		type RuntimeAppPublic = Public;
+		type GenericPublic = sr25519::Public;
+		type GenericSignature = sr25519::Signature;
+	}
+
+	impl
+		frame_system::offchain::AppCrypto<
+			<sr25519::Signature as Verify>::Signer,
+			sr25519::Signature,
+		> for AuthorityId
+	{
 		type RuntimeAppPublic = Public;
 		type GenericPublic = sr25519::Public;
 		type GenericSignature = sr25519::Signature;
@@ -197,3 +209,9 @@ impl<T: Config> Pallet<T> {
 		Ok(res.body().collect::<Vec<u8>>())
 	}
 }
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
