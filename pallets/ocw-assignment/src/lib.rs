@@ -125,7 +125,7 @@ pub mod pallet {
 	impl<T: Config> ValidateUnsigned for Pallet<T> {
 		type Call = Call<T>;
 		fn validate_unsigned(_source: TransactionSource, call: &Self::Call) -> TransactionValidity {
-			if let Self::Call::get_price_unsigned { block_number, .. } = call {
+			if let Self::Call::submit_price_unsigned { block_number, .. } = call {
 				let next_unsigned_at = <NextUnsignedAt<T>>::get();
 				let current_block = <frame_system::Pallet<T>>::block_number();
 
@@ -152,7 +152,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub fn get_price_unsigned(
+		pub fn submit_price_unsigned(
 			origin: OriginFor<T>,
 			_block_number: T::BlockNumber,
 			price: Vec<u8>,
@@ -169,7 +169,7 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(0)]
-		pub fn get_price(origin: OriginFor<T>, price: Vec<u8>) -> DispatchResult {
+		pub fn submit_price_signed(origin: OriginFor<T>, price: Vec<u8>) -> DispatchResult {
 			ensure_signed(origin)?;
 
 			let price: BVec = price.try_into().unwrap();
@@ -200,7 +200,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn submit_unsigned(price: &[u8], block_number: T::BlockNumber) -> Result<(), &'static str> {
-		let call = Call::<T>::get_price_unsigned { block_number, price: price.into() };
+		let call = Call::<T>::submit_price_unsigned { block_number, price: price.into() };
 		let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
 		if res.is_err() {
 			return Err("Could not submit unsigned transaction");
@@ -214,8 +214,9 @@ impl<T: Config> Pallet<T> {
 			return Err("No account to sign");
 		}
 
-		let results =
-			signer.send_signed_transaction(|_account| Call::<T>::get_price { price: price.into() });
+		let results = signer.send_signed_transaction(|_account| Call::<T>::submit_price_signed {
+			price: price.into(),
+		});
 
 		Ok(results)
 	}

@@ -46,7 +46,7 @@ fn should_submit_unsigned_transactions() {
 		assert_eq!(tx.signature, None);
 		assert_eq!(
 			tx.call,
-			RuntimeCall::OcwAssignment(crate::Call::get_price_unsigned {
+			RuntimeCall::OcwAssignment(crate::Call::submit_price_unsigned {
 				block_number: 1,
 				price: PRICE_RESPONSE.try_into().unwrap()
 			})
@@ -90,7 +90,7 @@ fn should_submit_signed_transactions() {
 		assert_eq!(tx.signature.unwrap().0, 0);
 		assert_eq!(
 			tx.call,
-			RuntimeCall::OcwAssignment(crate::Call::get_price {
+			RuntimeCall::OcwAssignment(crate::Call::submit_price_signed {
 				price: PRICE_RESPONSE.try_into().unwrap()
 			})
 		);
