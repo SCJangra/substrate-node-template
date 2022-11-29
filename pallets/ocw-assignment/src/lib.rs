@@ -66,6 +66,10 @@ pub mod pallet {
 	/// The block at which the nest unsigned transaction may be submitted
 	pub type NextUnsignedAt<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn current_price)]
+	pub type CurrentPrice<T: Config> = StorageValue<_, BVec, ValueQuery>;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config + CreateSignedTransaction<Call<Self>> {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -164,6 +168,8 @@ pub mod pallet {
 			let current_block = <frame_system::Pallet<T>>::block_number();
 			<NextUnsignedAt<T>>::put(current_block + T::UnsignedInterval::get());
 
+			<CurrentPrice<T>>::put(price.clone());
+
 			Self::deposit_event(Event::NewPriceUnsigned { price });
 			Ok(())
 		}
@@ -173,6 +179,9 @@ pub mod pallet {
 			ensure_signed(origin)?;
 
 			let price: BVec = price.try_into().unwrap();
+
+			<CurrentPrice<T>>::put(price.clone());
+
 			Self::deposit_event(Event::NewPriceSigned { price });
 			Ok(())
 		}
