@@ -50,9 +50,7 @@ pub mod pallet {
 	};
 	use frame_system::{
 		ensure_none, ensure_signed,
-		offchain::{
-			AppCrypto, CreateSignedTransaction, SendSignedTransaction, Signer, SubmitTransaction,
-		},
+		offchain::{AppCrypto, CreateSignedTransaction},
 		pallet_prelude::{BlockNumberFor, OriginFor},
 	};
 
@@ -102,33 +100,23 @@ pub mod pallet {
 			if <NextUnsignedAt<T>>::get() > block_number {
 				return;
 			}
-			let call = Call::<T>::set_current_price_unsigned { block_number, price: price.clone() };
-			let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-			if res.is_err() {
-				log::error!("Could not submit unsigned transaction");
+			if let Err(e) = Self::submit_unsigned(&price, block_number) {
+				log::error!("{e}");
 			}
 
 			// Submit signed transaction
-			let signer = Signer::<T, T::AuthorityId>::all_accounts();
-			if !signer.can_sign() {
-				log::error!("No account to sign");
-				return;
-			}
-
-			let results = signer.send_signed_transaction(|_account| Call::<T>::set_current_price {
-				price: price.clone(),
-			});
-
-			for (acc, res) in &results {
-				match res {
-					Err(()) => {
-						log::error!(
-							"Could not submitted signed transaction using account: {:?}",
-							acc.id
-						)
-					},
-					Ok(()) => {},
-				}
+			match Self::submit_signed(&price) {
+				Err(e) => log::error!("{e}"),
+				Ok(results) => {
+					for (acc, res) in &results {
+						if res.is_err() {
+							log::error!(
+								"Could not submitted signed transaction using account: {:?}",
+								acc.id
+							)
+						}
+					}
+				},
 			}
 		}
 	}
@@ -192,6 +180,8 @@ pub mod pallet {
 }
 
 use frame_support::sp_runtime::offchain::http;
+use frame_system::offchain::{Account, SendSignedTransaction, Signer, SubmitTransaction};
+type SignedTransactionResult<T> = Vec<(Account<T>, Result<(), ()>)>;
 impl<T: Config> Pallet<T> {
 	fn get_eth_price() -> Result<Vec<u8>, &'static str> {
 		let res = http::Request::get(
@@ -207,6 +197,28 @@ impl<T: Config> Pallet<T> {
 		}
 
 		Ok(res.body().collect::<Vec<u8>>())
+	}
+
+	fn submit_unsigned(price: &[u8], block_number: T::BlockNumber) -> Result<(), &'static str> {
+		let call = Call::<T>::set_current_price_unsigned { block_number, price: price.into() };
+		let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+		if res.is_err() {
+			return Err("Could not submit unsigned transaction");
+		}
+		Ok(())
+	}
+
+	fn submit_signed(price: &[u8]) -> Result<SignedTransactionResult<T>, &'static str> {
+		let signer = Signer::<T, T::AuthorityId>::all_accounts();
+		if !signer.can_sign() {
+			return Err("No account to sign");
+		}
+
+		let results = signer.send_signed_transaction(|_account| Call::<T>::set_current_price {
+			price: price.into(),
+		});
+
+		Ok(results)
 	}
 }
 

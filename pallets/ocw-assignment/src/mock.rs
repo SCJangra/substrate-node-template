@@ -49,7 +49,7 @@ impl frame_system::Config for Test {
 // ╭──────────────────────────────────────────────────────────╮
 // │ Impl traits related to offchain workers                  │
 // ╰──────────────────────────────────────────────────────────╯
-type Extrinsic = testing::TestXt<RuntimeCall, ()>;
+pub type Extrinsic = testing::TestXt<RuntimeCall, ()>;
 type AccountId =
 	<<sr25519::Signature as rt_traits::Verify>::Signer as rt_traits::IdentifyAccount>::AccountId;
 
