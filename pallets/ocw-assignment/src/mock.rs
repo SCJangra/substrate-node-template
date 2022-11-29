@@ -94,9 +94,6 @@ impl crate::Config for Test {
 // ╭──────────────────────────────────────────────────────────╮
 // │ Exports                                                  │
 // ╰──────────────────────────────────────────────────────────╯
-pub fn new_test_pub() -> sr25519::Public {
-	sr25519::Public::from_raw([1u8; 32])
-}
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	sp_io::TestExternalities::default()
 }
