@@ -1,6 +1,9 @@
-use frame_support::sp_runtime::offchain::{testing, OffchainWorkerExt, TransactionPoolExt};
+use frame_support::{
+	assert_ok,
+	sp_runtime::offchain::{testing, OffchainWorkerExt, TransactionPoolExt},
+};
 use parity_scale_codec::Decode;
-use sp_keystore::{testing::KeyStore, KeystoreExt};
+use sp_keystore::{testing::KeyStore, KeystoreExt, SyncCryptoStore};
 use std::sync::Arc;
 
 use crate::mock::*;
@@ -49,6 +52,49 @@ fn should_submit_unsigned_transactions() {
 			})
 		);
 	})
+}
+
+#[test]
+fn should_submit_signed_transactions() {
+	const PHRASE: &str =
+		"news slush supreme milk chapter athlete soap sausage put clutch what kitten";
+
+	let (offchain, _offchain_state) = testing::TestOffchainExt::new();
+	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
+
+	let keystore = KeyStore::new();
+
+	SyncCryptoStore::sr25519_generate_new(
+		&keystore,
+		crate::KEY_TYPE,
+		Some(&format!("{}/hunter1", PHRASE)),
+	)
+	.unwrap();
+
+	let mut t = new_test_ext();
+	t.register_extension(OffchainWorkerExt::new(offchain));
+	t.register_extension(TransactionPoolExt::new(pool));
+	t.register_extension(KeystoreExt(Arc::new(keystore)));
+
+	t.execute_with(|| {
+		let results = OcwAssignment::submit_signed(PRICE_RESPONSE).unwrap();
+		for (_, res) in &results {
+			assert_ok!(res);
+		}
+
+		let tx = pool_state.write().transactions.pop().unwrap();
+		assert!(pool_state.read().transactions.is_empty());
+
+		let tx = Extrinsic::decode(&mut &*tx).unwrap();
+		// QUESTION: What does this do?
+		assert_eq!(tx.signature.unwrap().0, 0);
+		assert_eq!(
+			tx.call,
+			RuntimeCall::OcwAssignment(crate::Call::get_price {
+				price: PRICE_RESPONSE.try_into().unwrap()
+			})
+		);
+	});
 }
 
 fn expect_request(state: &mut testing::OffchainState) {
