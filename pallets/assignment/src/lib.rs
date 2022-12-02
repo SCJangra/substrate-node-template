@@ -95,7 +95,10 @@ pub mod pallet {
 				vtbc_balance: 0,
 			};
 
-			Self::supply_vtbc_to(&mut e, 5u64.to_vtbc())?;
+			let price = pallet_ocw_assignment::Pallet::<T>::current_price();
+			let price = Self::parse_price(&price);
+
+			Self::supply_vtbc_to(&mut e, price.to_vtbc())?;
 
 			Employees::<T>::insert(bid, e.clone());
 
@@ -149,7 +152,7 @@ pub mod pallet {
 	}
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_ocw_assignment::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
 	}
@@ -162,6 +165,16 @@ impl<T: Config> Pallet<T> {
 		employee.vtbc_balance += vtbc;
 
 		Ok(())
+	}
+
+	fn parse_price(price: &[u8]) -> u64 {
+		// remove curly brackets
+		let price = &price[1..price.len() - 1];
+		let price = sp_std::str::from_utf8(price).unwrap();
+		let (_, price) = price.split_once(':').unwrap();
+		let price: f64 = price.parse().unwrap();
+
+		unsafe { price.to_int_unchecked::<u64>() }
 	}
 }
 

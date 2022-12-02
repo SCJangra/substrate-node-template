@@ -3890,6 +3890,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-ocw-assignment",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
