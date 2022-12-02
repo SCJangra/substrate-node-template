@@ -3695,6 +3695,7 @@ dependencies = [
  "sp-finality-grandpa",
  "sp-inherents",
  "sp-keyring",
+ "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
  "substrate-build-script-utils",
@@ -3717,6 +3718,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-grandpa",
+ "pallet-ocw-assignment",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
  "pallet-template",
@@ -3962,6 +3964,18 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-ocw-assignment"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-keystore",
  "sp-std",
 ]
 
