@@ -8,13 +8,19 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::weights::*;
+	use super::{weights::*, ToVtbc};
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
 
 	// A type to hold strings
 	type BVec = BoundedVec<u8, ConstU32<100>>;
+
+	// Tokey type
+	pub type Vtbc = u64;
+
+	// 1 Vtbc has a fixed price of 5 Dollars
+	pub const VTBC_PRICE: u64 = 5;
 
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 	#[cfg_attr(feature = "std", derive(Debug))]
@@ -23,6 +29,7 @@ pub mod pallet {
 		pub name: BVec,
 		pub company_name: BVec,
 		pub dob: (u8, u8, u16),
+		pub vtbc_balance: Vtbc,
 	}
 
 	#[pallet::pallet]
@@ -31,7 +38,16 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	pub(super) type Employees<T: Config> = StorageMap<_, Blake2_128Concat, BVec, Employee>;
+	pub type Employees<T: Config> = StorageMap<_, Blake2_128Concat, BVec, Employee>;
+
+	#[pallet::type_value]
+	pub fn DefaultVtbcSupply<T: Config>() -> Vtbc {
+		1_000_000
+	}
+
+	/// Current Vtbc supply
+	#[pallet::storage]
+	pub type VtbcSupply<T: Config> = StorageValue<_, Vtbc, ValueQuery, DefaultVtbcSupply<T>>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -47,6 +63,8 @@ pub mod pallet {
 		AlreadyExists,
 		// Employee not found
 		NotFound,
+		// No more Vtbc available to supply
+		InsufficientFunds,
 	}
 
 	#[pallet::call]
@@ -69,12 +87,15 @@ pub mod pallet {
 
 			ensure!(!Employees::<T>::contains_key(&bid), Error::<T>::AlreadyExists);
 
-			let e = Employee {
+			let mut e = Employee {
 				id: bid.clone(),
 				name: bname,
 				company_name: bconpany_name,
 				dob: (day, month, year),
+				vtbc_balance: 0,
 			};
+
+			Self::supply_vtbc_to(&mut e, 5u64.to_vtbc())?;
 
 			Employees::<T>::insert(bid, e.clone());
 
@@ -131,6 +152,33 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
+	}
+}
+
+impl<T: Config> Pallet<T> {
+	fn supply_vtbc_to(employee: &mut Employee, vtbc: Vtbc) -> Result<(), Error<T>> {
+		VtbcSupply::<T>::get().checked_sub(vtbc).ok_or(Error::<T>::InsufficientFunds)?;
+
+		employee.vtbc_balance += vtbc;
+
+		Ok(())
+	}
+}
+
+pub trait ToVtbc {
+	fn to_vtbc(self) -> Vtbc;
+}
+
+impl ToVtbc for u64 {
+	fn to_vtbc(self) -> Vtbc {
+		self / VTBC_PRICE
+	}
+}
+
+impl ToVtbc for f64 {
+	fn to_vtbc(self) -> Vtbc {
+		let v: u64 = unsafe { self.to_int_unchecked::<u64>() };
+		v / VTBC_PRICE
 	}
 }
 
