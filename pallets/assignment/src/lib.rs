@@ -6,9 +6,13 @@ pub mod weights;
 
 pub use pallet::*;
 
+pub trait CurrentPrice {
+	fn current_price() -> u64;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{weights::*, ToVtbc};
+	use super::{weights::*, CurrentPrice, ToVtbc};
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use sp_std::prelude::*;
@@ -95,7 +99,9 @@ pub mod pallet {
 				vtbc_balance: 0,
 			};
 
-			Self::supply_vtbc_to(&mut e, 5u64.to_vtbc())?;
+			let price = T::CurrentPrice::current_price();
+
+			Self::supply_vtbc_to(&mut e, price.to_vtbc())?;
 
 			Employees::<T>::insert(bid, e.clone());
 
@@ -152,6 +158,7 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type WeightInfo: WeightInfo;
+		type CurrentPrice: CurrentPrice;
 	}
 }
 

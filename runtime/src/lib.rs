@@ -7,9 +7,25 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub use pallet_assignment;
+
+pub struct CurrentPrice;
+
+impl pallet_assignment::CurrentPrice for CurrentPrice {
+	fn current_price() -> u64 {
+		let price = OcwAssignment::current_price();
+		let price = sp_std::str::from_utf8(&price).unwrap();
+		let price = &price[1..price.len() - 1];
+		let (_, price) = price.split_once(':').unwrap();
+		let price: f64 = price.parse().unwrap();
+
+		unsafe { price.to_int_unchecked::<u64>() }
+	}
+}
+
 impl pallet_assignment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_assignment::weights::SubstrateWeight<Runtime>;
+	type CurrentPrice = CurrentPrice;
 }
 
 pub use pallet_ocw_assignment;
