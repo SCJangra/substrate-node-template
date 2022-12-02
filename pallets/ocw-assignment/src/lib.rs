@@ -193,13 +193,12 @@ use frame_system::offchain::{Account, SendSignedTransaction, Signer, SubmitTrans
 type SignedTransactionResult<T> = Vec<(Account<T>, Result<(), ()>)>;
 impl<T: Config> Pallet<T> {
 	fn get_eth_price() -> Result<Vec<u8>, &'static str> {
-		let res = http::Request::get(
-			"https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=ETH,USD,EUR",
-		)
-		.send()
-		.map_err(|_| "Could not send GET")?
-		.wait()
-		.map_err(|_| "Could not get response from endpoint")?;
+		let res =
+			http::Request::get("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD")
+				.send()
+				.map_err(|_| "Could not send GET")?
+				.wait()
+				.map_err(|_| "Could not get response from endpoint")?;
 
 		if res.code != 200 {
 			return Err("Got invalid status code");

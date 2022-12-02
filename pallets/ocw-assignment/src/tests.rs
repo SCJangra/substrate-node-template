@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use crate::mock::*;
 
-const PRICE_RESPONSE: &[u8] = br#"{"ETH":1,"USD":100,"EUR":100}"#;
+const PRICE_RESPONSE: &[u8] = br#"{"USD":100}"#;
 
 #[test]
 fn should_make_http_call() {
@@ -100,7 +100,7 @@ fn should_submit_signed_transactions() {
 fn expect_request(state: &mut testing::OffchainState) {
 	state.expect_request(testing::PendingRequest {
 		method: "GET".into(),
-		uri: "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=ETH,USD,EUR".into(),
+		uri: "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD".into(),
 		response: Some(PRICE_RESPONSE.to_vec()),
 		sent: true,
 		..Default::default()
